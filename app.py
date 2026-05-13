@@ -122,6 +122,12 @@ def beacon_page():
     return render_template("beacon.html")
 
 
+@app.get("/api/ping")
+def api_ping():
+    """Diagnóstico rápido: confirma que o tráfego chega a este Flask (útil atrás de túnel/proxy)."""
+    return jsonify({"ok": True, "service": "cyber-awareness-lab"})
+
+
 @app.get("/api/server-meta")
 def server_meta():
     """Dados que qualquer site vê no handshake HTTP (lado servidor)."""
