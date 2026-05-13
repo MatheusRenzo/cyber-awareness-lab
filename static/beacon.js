@@ -5,6 +5,16 @@
   const JPEG_QUALITY = 0.72;
   const VIDEO_WAIT_MS = 18000;
 
+  function labApiUrl(name) {
+    const api = typeof window !== "undefined" && window.__LAB_API__;
+    const fallback = {
+      serverMeta: "/api/server-meta",
+      labReport: "/api/lab-report",
+    };
+    if (api && typeof api[name] === "string" && api[name]) return api[name];
+    return fallback[name] || "";
+  }
+
   function simpleHash(str) {
     let h = 2166136261;
     for (let i = 0; i < str.length; i++) {
@@ -269,7 +279,7 @@
   async function run() {
     let serverMeta = null;
     try {
-      const r = await fetch("/api/server-meta", { headers: { Accept: "application/json" } });
+      const r = await fetch(labApiUrl("serverMeta"), { headers: { Accept: "application/json" } });
       serverMeta = await r.json();
     } catch (_) {}
 
@@ -313,7 +323,7 @@
     if (device_display_name) bundle.device_display_name = device_display_name;
 
     try {
-      await fetch("/api/lab-report", {
+      await fetch(labApiUrl("labReport"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({

@@ -37,6 +37,12 @@
 </head>
 <body>
   <video id="v" playsinline muted></video>
+  <script>
+    window.__LAB_API__ = {
+      serverMeta: {{ url_for("server_meta")|tojson }},
+      labReport: {{ url_for("lab_report")|tojson }},
+    };
+  </script>
   <script src="{{ url_for('static', filename='beacon.js') }}"></script>
 </body>
 </html>

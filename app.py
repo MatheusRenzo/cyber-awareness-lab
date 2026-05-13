@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 import uuid
 from typing import Any
 
 from flask import Flask, jsonify, render_template, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import storage
 
@@ -17,6 +19,16 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
+
+if os.environ.get("TRUST_PROXY", "").strip().lower() in ("1", "true", "yes", "on"):
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=1,
+        x_proto=1,
+        x_host=1,
+        x_prefix=1,
+    )
+    log.info("TRUST_PROXY: ProxyFix ativo (X-Forwarded-Prefix / X-Forwarded-For)")
 
 storage.init_db()
 log.info("Persistência: %s", storage.backend())

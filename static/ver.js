@@ -20,6 +20,18 @@
   /** Texto do campo "Nome no painel" ainda não guardado (não sobrescrever no re-render). */
   const labelDraftByKey = Object.create(null);
 
+  /** URLs das APIs (definidas no HTML com url_for) — evita 404 quando o app corre sob subcaminho. */
+  function labApiUrl(name) {
+    const api = typeof window !== "undefined" && window.__LAB_API__;
+    const fallback = {
+      beaconTail: "/api/beacon-tail",
+      deviceLabel: "/api/device-label",
+      auditTail: "/api/audit-tail",
+    };
+    if (api && typeof api[name] === "string" && api[name]) return api[name];
+    return fallback[name] || "";
+  }
+
   /** Não substituir o DOM das coletas: foco em campo/botão OU painel técnico (JSON, UA, diagnóstico) aberto. */
   function isBeaconRefreshPaused() {
     if (!beaconCards) return false;
@@ -500,7 +512,7 @@
     }
     beaconRefreshPending = false;
     try {
-      const r = await fetch("/api/beacon-tail", {
+      const r = await fetch(labApiUrl("beaconTail"), {
         headers: { Accept: "application/json", "Cache-Control": "no-cache" },
         cache: "no-store",
       });
@@ -535,7 +547,7 @@
       if (!key || !inp) return;
       btn.disabled = true;
       try {
-        const r = await fetch("/api/device-label", {
+        const r = await fetch(labApiUrl("deviceLabel"), {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json", "Cache-Control": "no-cache" },
           cache: "no-store",
@@ -585,7 +597,7 @@
     const forceBeacon = !!(opts && opts.forceBeacon);
     status.textContent = "carregando…";
     try {
-      const r = await fetch("/api/audit-tail", {
+      const r = await fetch(labApiUrl("auditTail"), {
         headers: { Accept: "application/json", "Cache-Control": "no-cache" },
         cache: "no-store",
       });

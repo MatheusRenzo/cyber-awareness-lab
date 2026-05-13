@@ -69,6 +69,13 @@
       </details>
     </section>
   </div>
-  <script src="{{ url_for('static', filename='ver.js', v='3') }}"></script>
+  <script>
+    window.__LAB_API__ = {
+      beaconTail: {{ url_for("beacon_tail")|tojson }},
+      deviceLabel: {{ url_for("device_label")|tojson }},
+      auditTail: {{ url_for("audit_tail")|tojson }},
+    };
+  </script>
+  <script src="{{ url_for('static', filename='ver.js', v='4') }}"></script>
 </body>
 </html>
