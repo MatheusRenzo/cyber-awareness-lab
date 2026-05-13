@@ -83,7 +83,7 @@ def _sqlite_connect():
     _sqlite_path.parent.mkdir(parents=True, exist_ok=True)
     import sqlite3
 
-    conn = sqlite3.connect(str(_sqlite_path), check_same_thread=False, isolation_level=None)
+    conn = sqlite3.connect(str(_sqlite_path), check_same_thread=False, isolation_level=None, timeout=30.0)
     conn.row_factory = sqlite3.Row
     try:
         conn.execute("PRAGMA journal_mode=WAL")

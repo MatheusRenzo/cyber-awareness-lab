@@ -500,7 +500,10 @@
     }
     beaconRefreshPending = false;
     try {
-      const r = await fetch("/api/beacon-tail", { headers: { Accept: "application/json" } });
+      const r = await fetch("/api/beacon-tail", {
+        headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+        cache: "no-store",
+      });
       const j = await r.json();
       if (j.labels && typeof j.labels === "object") deviceLabelsMap = j.labels;
       renderBeacons(j.events);
@@ -534,17 +537,23 @@
       try {
         const r = await fetch("/api/device-label", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          headers: { "Content-Type": "application/json", Accept: "application/json", "Cache-Control": "no-cache" },
+          cache: "no-store",
           body: JSON.stringify({ device_key: key, label: inp.value.trim() }),
         });
-        const j = await r.json();
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.ok === false) {
+          window.alert("Não foi possível guardar o nome: " + (j.error || r.status + " " + r.statusText));
+          return;
+        }
         if (j.labels && typeof j.labels === "object") deviceLabelsMap = j.labels;
         delete labelDraftByKey[key];
         await loadBeacons({ force: true });
-      } catch (_) {
-        /* ignore */
+      } catch (err) {
+        window.alert("Erro de rede ao guardar o nome: " + String(err));
+      } finally {
+        btn.disabled = false;
       }
-      btn.disabled = false;
     });
   }
 
@@ -576,7 +585,10 @@
     const forceBeacon = !!(opts && opts.forceBeacon);
     status.textContent = "carregando…";
     try {
-      const r = await fetch("/api/audit-tail", { headers: { Accept: "application/json" } });
+      const r = await fetch("/api/audit-tail", {
+        headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+        cache: "no-store",
+      });
       const j = await r.json();
       out.textContent = pretty(j);
       const n = Array.isArray(j.events) ? j.events.length : 0;

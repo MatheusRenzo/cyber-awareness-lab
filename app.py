@@ -84,7 +84,12 @@ def _security_headers(resp):
 
 @app.after_request
 def add_headers(resp):
-    return _security_headers(resp)
+    resp = _security_headers(resp)
+    if request.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store, max-age=0, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+    return resp
 
 
 @app.get("/")
