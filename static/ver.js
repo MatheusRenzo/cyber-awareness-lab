@@ -1,14 +1,11 @@
 (function () {
   "use strict";
 
-  const out = document.getElementById("ver-out");
-  const status = document.getElementById("ver-status");
   const btn = document.getElementById("ver-refresh");
   const resetLabBtn = document.getElementById("ver-reset-lab");
   const beaconCards = document.getElementById("beacon-cards");
   const beaconCount = document.getElementById("beacon-count");
   const deviceGroupsCount = document.getElementById("device-groups-count");
-  const auditSummary = document.getElementById("audit-summary");
   const intervalSelect = document.getElementById("ver-interval");
   let pollTimer = null;
   let intervalMs = 3000;
@@ -27,7 +24,6 @@
     const fallback = {
       beaconTail: "/api/beacon-tail",
       deviceLabel: "/api/device-label",
-      auditTail: "/api/audit-tail",
       labReset: "/api/lab-reset",
     };
     if (api && typeof api[name] === "string" && api[name]) return api[name];
@@ -453,58 +449,6 @@
     if (groups.length > 0) verBeaconHadDeviceGroups = true;
   }
 
-  function auditVariant(type) {
-    if (type === "lab_report") return "accent";
-    if (type === "server_meta_view") return "neutral";
-    return "neutral";
-  }
-
-  function renderAuditSummary(events) {
-    if (!auditSummary) return;
-    if (!Array.isArray(events) || events.length === 0) {
-      auditSummary.innerHTML = '<p class="ver-muted-line">Sem eventos na fila.</p>';
-      return;
-    }
-    const recent = [...events].reverse().slice(0, 12);
-    auditSummary.innerHTML =
-      '<ul class="ver-audit-list">' +
-      recent
-        .map((e) => {
-          const t = e.type || "evento";
-          const when = formatWhen(e.ts);
-          const v = auditVariant(t);
-          let sub = "";
-          if (t === "server_meta_view") {
-            sub = escapeHtml((e.ua_short || "").slice(0, 80));
-          } else if (t === "lab_report") {
-            sub = (e.bundle_keys || []).join(", ");
-            sub = escapeHtml(sub.slice(0, 100));
-          } else {
-            sub = escapeHtml(pretty(e).slice(0, 120) + "…");
-          }
-          return (
-            '<li class="ver-audit-item">' +
-            '<div class="ver-audit-item__row">' +
-            '<span class="ver-audit-item__time">' +
-            escapeHtml(when) +
-            "</span>" +
-            '<span class="ver-chip ver-chip--' +
-            v +
-            '">' +
-            escapeHtml(t) +
-            "</span>" +
-            '<span class="ver-audit-item__ip">' +
-            escapeHtml(e.ip || "—") +
-            "</span></div>" +
-            '<span class="ver-audit-item__sub">' +
-            sub +
-            "</span></li>"
-          );
-        })
-        .join("") +
-      "</ul>";
-  }
-
   async function loadBeacons(opts) {
     if (!beaconCards) return;
     const force = !!(opts && opts.force);
@@ -595,25 +539,8 @@
     }, true);
   }
 
-  async function load(opts) {
-    const forceBeacon = !!(opts && opts.forceBeacon);
-    status.textContent = "carregando…";
-    try {
-      const r = await fetch(labApiUrl("auditTail"), {
-        headers: { Accept: "application/json", "Cache-Control": "no-cache" },
-        cache: "no-store",
-      });
-      const j = await r.json();
-      out.textContent = pretty(j);
-      const n = Array.isArray(j.events) ? j.events.length : 0;
-      status.textContent = n + " evento(s) · " + new Date().toLocaleTimeString("pt-BR");
-      renderAuditSummary(j.events);
-    } catch (e) {
-      out.textContent = "Erro: " + e;
-      status.textContent = "erro";
-      if (auditSummary) auditSummary.innerHTML = "";
-    }
-    await loadBeacons(forceBeacon ? { force: true } : undefined);
+  async function refreshColetas(opts) {
+    await loadBeacons(opts && opts.forceBeacon ? { force: true } : undefined);
   }
 
   function setPoll() {
@@ -622,7 +549,7 @@
       pollTimer = null;
     }
     if (intervalMs <= 0) return;
-    pollTimer = setInterval(load, intervalMs);
+    pollTimer = setInterval(refreshColetas, intervalMs);
   }
 
   document.addEventListener("visibilitychange", () => {
@@ -633,6 +560,7 @@
       }
     } else {
       setPoll();
+      refreshColetas();
     }
   });
 
@@ -641,16 +569,18 @@
       intervalMs = parseInt(intervalSelect.value, 10);
       if (Number.isNaN(intervalMs)) intervalMs = 3000;
       setPoll();
-      load();
+      refreshColetas();
     });
   }
 
-  btn.addEventListener("click", () => load({ forceBeacon: true }));
+  if (btn) {
+    btn.addEventListener("click", () => refreshColetas({ forceBeacon: true }));
+  }
 
   if (resetLabBtn) {
     resetLabBtn.addEventListener("click", async () => {
       const ok = window.confirm(
-        "Apagar permanentemente todas as coletas (/b), nomes amigáveis dos dispositivos e a linha de tempo de auditoria?\n\nIsto não pode ser desfeito."
+        "Apagar permanentemente todas as coletas (/b) e os nomes guardados no painel?\n\nIsto não pode ser desfeito."
       );
       if (!ok) return;
       resetLabBtn.disabled = true;
@@ -671,7 +601,7 @@
           return;
         }
         deviceLabelsMap = {};
-        await load({ forceBeacon: true });
+        await refreshColetas({ forceBeacon: true });
       } catch (err) {
         window.alert("Erro de rede ao apagar: " + String(err));
       } finally {
@@ -682,6 +612,6 @@
 
   initBeaconLabelSave();
   initBeaconRefreshResume();
-  load();
+  refreshColetas();
   setPoll();
 })();

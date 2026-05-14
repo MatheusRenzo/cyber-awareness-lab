@@ -21,7 +21,6 @@
         </div>
       </div>
       <div class="topbar-actions ver-topbar-actions">
-        <span class="pill ver-pill-stat" title="Eventos na auditoria"><span id="ver-status">—</span></span>
         <span class="pill ver-pill-count" title="Coletas /b agrupadas por dispositivo">
           <span id="beacon-count">0</span> coleta(s) · <span id="device-groups-count">0</span> disp.
         </span>
@@ -41,14 +40,14 @@
           </select>
         </div>
         <div class="ver-toolbar-group ver-toolbar-group--danger">
-          <button type="button" class="btn danger ver-btn-reset-lab" id="ver-reset-lab" title="Remove todas as coletas /b, nomes e auditoria">
+          <button type="button" class="btn danger ver-btn-reset-lab" id="ver-reset-lab" title="Remove todas as coletas /b e nomes guardados">
             Apagar todas as coletas…
           </button>
         </div>
       </div>
       <p id="ver-toolbar-tip" class="ver-toolbar-tip muted">
         Com o separador em segundo plano, a lista pausa sozinha. Enquanto escreve o nome, clica em Guardar ou tem JSON/UA/diagnóstico aberto dentro de uma captura, a lista <strong>não</strong> é reescrita (evita fechar o que estava a ver). Use <strong>Atualizar agora</strong> para forçar.
-        <strong>Apagar todas as coletas</strong> remove coletas <code class="ver-code">/b</code>, nomes e auditoria (irreversível).
+        <strong>Apagar todas as coletas</strong> remove coletas <code class="ver-code">/b</code> e nomes guardados (irreversível).
       </p>
     </div>
 
@@ -62,27 +61,14 @@
       </div>
       <div class="ver-beacon-grid" id="beacon-cards"></div>
     </section>
-
-    <section class="ver-audit-section" aria-labelledby="audit-title">
-      <div class="ver-section-head">
-        <h2 class="ver-audit-title" id="audit-title">Linha do tempo · API</h2>
-        <p class="muted ver-hint ver-hint--tight">Resumo dos últimos pedidos; o JSON cru fica em baixo.</p>
-      </div>
-      <div id="audit-summary" class="ver-audit-summary"></div>
-      <details class="ver-raw-wrap">
-        <summary class="ver-raw-summary">Mostrar JSON completo da auditoria</summary>
-        <pre class="code ver-pre" id="ver-out">Carregando…</pre>
-      </details>
-    </section>
   </div>
   <script>
     window.__LAB_API__ = {
       beaconTail: {{ url_for("beacon_tail")|tojson }},
       deviceLabel: {{ url_for("device_label")|tojson }},
-      auditTail: {{ url_for("audit_tail")|tojson }},
       labReset: {{ url_for("lab_reset")|tojson }},
     };
   </script>
-  <script src="{{ url_for('static', filename='ver.js', v='5') }}"></script>
+  <script src="{{ url_for('static', filename='ver.js', v='6') }}"></script>
 </body>
 </html>
