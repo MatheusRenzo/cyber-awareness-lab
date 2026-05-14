@@ -1,0 +1,15 @@
+[Unit]
+Description=Cyber Awareness Lab (Flask/Gunicorn, painel /b e APIs)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/cyber-awareness-lab
+Environment=PATH=/root/cyber-awareness-lab/.venv/bin
+EnvironmentFile=-/root/cyber-awareness-lab/.env
+ExecStart=/root/cyber-awareness-lab/.venv/bin/gunicorn -w 2 -b 127.0.0.1:8787 --access-logfile - --error-logfile - wsgi:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
