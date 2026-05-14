@@ -467,6 +467,7 @@
     beaconRefreshPending = false;
     try {
       const r = await fetch(labApiUrl("beaconTail"), {
+        credentials: "same-origin",
         headers: { Accept: "application/json", "Cache-Control": "no-cache" },
         cache: "no-store",
       });
@@ -507,6 +508,7 @@
       try {
         const r = await fetch(labApiUrl("deviceLabel"), {
           method: "POST",
+          credentials: "same-origin",
           headers: { "Content-Type": "application/json", Accept: "application/json", "Cache-Control": "no-cache" },
           cache: "no-store",
           body: JSON.stringify({ device_key: key, label: inp.value.trim() }),
@@ -603,6 +605,7 @@
       try {
         const r = await fetch(labApiUrl("labReset"), {
           method: "POST",
+          credentials: "same-origin",
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",

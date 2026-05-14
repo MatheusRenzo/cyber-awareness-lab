@@ -155,10 +155,10 @@ def _safe_next_param() -> str:
 
 
 def _beacon_public_request() -> bool:
-    """GET /b e APIs usadas só pela página de coleta (sem senha do painel)."""
-    if request.path == "/b" and request.method == "GET":
+    """GET/HEAD /b e APIs usadas só pela página de coleta (sem senha do painel)."""
+    if request.path == "/b" and request.method in ("GET", "HEAD"):
         return True
-    if request.path == "/api/server-meta" and request.method == "GET":
+    if request.path == "/api/server-meta" and request.method in ("GET", "HEAD"):
         return True
     if request.path == "/api/lab-report" and request.method == "POST":
         return True
