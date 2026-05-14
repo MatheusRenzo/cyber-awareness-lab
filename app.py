@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import secrets
 import time
 import uuid
 from typing import Any
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import storage
@@ -19,6 +20,36 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+
+def _panel_password() -> str:
+    return (os.environ.get("LAB_PANEL_PASSWORD") or "").strip()
+
+
+def _panel_auth_enabled() -> bool:
+    return bool(_panel_password())
+
+
+def _configure_secret_key() -> None:
+    if _panel_auth_enabled():
+        sk = (os.environ.get("FLASK_SECRET_KEY") or "").strip()
+        if not sk:
+            sk = os.urandom(32).hex()
+            log.warning(
+                "LAB_PANEL_PASSWORD definida mas FLASK_SECRET_KEY vazia; usando chave efémera "
+                "(sessões invalidam ao reiniciar). Defina FLASK_SECRET_KEY no .env."
+            )
+        app.secret_key = sk
+    else:
+        app.secret_key = (os.environ.get("FLASK_SECRET_KEY") or "").strip() or os.urandom(24).hex()
+
+
+_configure_secret_key()
+
+if os.environ.get("FLASK_SESSION_COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "on"):
+    app.config["SESSION_COOKIE_SECURE"] = True
 
 _trust_proxy = os.environ.get("TRUST_PROXY", "").strip().lower() in ("1", "true", "yes", "on")
 _trust_xfp = os.environ.get("TRUST_X_FORWARDED_PREFIX", "").strip().lower() in ("1", "true", "yes", "on")
@@ -39,6 +70,8 @@ if _trust_proxy:
 
 storage.init_db()
 log.info("Persistência: %s", storage.backend())
+if _panel_auth_enabled():
+    log.info("Painel e APIs sensíveis protegidos por LAB_PANEL_PASSWORD (link /b + envio de coleta permanecem públicos).")
 
 # Relatórios “beacon” (/b): fotos, geo e pacote completo na base de dados.
 _BEACON_MAX_PHOTO_B64 = 500_000
@@ -109,6 +142,99 @@ def add_headers(resp):
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
     return resp
+
+
+_SESSION_OK = "lab_panel_ok"
+
+
+def _safe_next_param() -> str:
+    n = (request.form.get("next") or request.args.get("next") or "").strip()
+    if n.startswith("/") and not n.startswith("//") and "\r" not in n and "\n" not in n and len(n) < 512:
+        return n
+    return "/ver"
+
+
+def _beacon_public_request() -> bool:
+    """GET /b e APIs usadas só pela página de coleta (sem senha do painel)."""
+    if request.path == "/b" and request.method == "GET":
+        return True
+    if request.path == "/api/server-meta" and request.method == "GET":
+        return True
+    if request.path == "/api/lab-report" and request.method == "POST":
+        return True
+    return False
+
+
+def _panel_session_ok() -> bool:
+    return bool(session.get(_SESSION_OK))
+
+
+def _bearer_ok() -> bool:
+    if not _panel_auth_enabled():
+        return False
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return False
+    token = auth[7:].strip()
+    exp = _panel_password()
+    if not token or not exp:
+        return False
+    try:
+        return secrets.compare_digest(token, exp)
+    except (TypeError, ValueError):
+        return False
+
+
+@app.context_processor
+def inject_panel_auth():
+    return {"panel_auth_enabled": _panel_auth_enabled()}
+
+
+@app.before_request
+def panel_auth_gate():
+    if not _panel_auth_enabled():
+        return None
+    if _beacon_public_request():
+        return None
+    path = request.path or ""
+    if path.startswith("/static/"):
+        return None
+    if path in ("/lab-login", "/lab-logout"):
+        return None
+    if _panel_session_ok():
+        return None
+    if path.startswith("/api/") and _bearer_ok():
+        return None
+    if path.startswith("/api/"):
+        return jsonify({"ok": False, "error": "Não autorizado"}), 401
+    return redirect(url_for("lab_login", next=path))
+
+
+@app.route("/lab-login", methods=["GET", "POST"])
+def lab_login():
+    if not _panel_auth_enabled():
+        return redirect(url_for("ver"))
+    if request.method == "POST":
+        pw = (request.form.get("password") or "").strip()
+        exp = _panel_password()
+        try:
+            if secrets.compare_digest(pw, exp):
+                session.clear()
+                session[_SESSION_OK] = True
+                return redirect(_safe_next_param())
+        except (TypeError, ValueError):
+            pass
+        return render_template("lab_login.html", error="Senha incorreta.")
+    return render_template("lab_login.html")
+
+
+@app.route("/lab-logout", methods=["GET", "POST"])
+def lab_logout():
+    session.pop(_SESSION_OK, None)
+    session.clear()
+    if _panel_auth_enabled():
+        return redirect(url_for("lab_login"))
+    return redirect(url_for("ver"))
 
 
 @app.get("/")

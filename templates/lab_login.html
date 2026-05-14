@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="ver-root">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entrar · Painel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="ver-body">
+  <div class="noise" aria-hidden="true"></div>
+  <div class="app ver-wrap ver-login-wrap">
+    <header class="topbar ver-topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <strong>Painel protegido</strong>
+          <span class="sub">Introduza a senha definida em <code class="ver-code">LAB_PANEL_PASSWORD</code> no servidor.</span>
+        </div>
+      </div>
+    </header>
+    <div class="ver-toolbar ver-login-box">
+      {% if error %}
+      <p class="ver-login-error" role="alert">{{ error }}</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('lab_login') }}" class="ver-login-form">
+        <input type="hidden" name="next" value="{{ request.args.get('next', '')|e }}" />
+        <label for="lab-password" class="ver-toolbar-label">Senha</label>
+        <input
+          id="lab-password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          class="ver-input"
+          placeholder="Senha do painel"
+        />
+        <button type="submit" class="btn primary ver-login-submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

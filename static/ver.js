@@ -25,9 +25,17 @@
       beaconTail: "/api/beacon-tail",
       deviceLabel: "/api/device-label",
       labReset: "/api/lab-reset",
+      labLogin: "/lab-login",
     };
     if (api && typeof api[name] === "string" && api[name]) return api[name];
     return fallback[name] || "";
+  }
+
+  function redirectToPanelLogin() {
+    const base = labApiUrl("labLogin");
+    if (!base) return;
+    const next = encodeURIComponent(location.pathname + (location.search || ""));
+    window.location.href = base + (base.indexOf("?") >= 0 ? "&" : "?") + "next=" + next;
   }
 
   /** Não substituir o DOM das coletas: foco em campo/botão OU painel técnico (JSON, UA, diagnóstico) aberto. */
@@ -462,6 +470,10 @@
         headers: { Accept: "application/json", "Cache-Control": "no-cache" },
         cache: "no-store",
       });
+      if (r.status === 401) {
+        redirectToPanelLogin();
+        return;
+      }
       const j = await r.json();
       if (j.labels && typeof j.labels === "object") deviceLabelsMap = j.labels;
       renderBeacons(j.events);
@@ -499,6 +511,10 @@
           cache: "no-store",
           body: JSON.stringify({ device_key: key, label: inp.value.trim() }),
         });
+        if (r.status === 401) {
+          redirectToPanelLogin();
+          return;
+        }
         const j = await r.json().catch(() => ({}));
         if (!r.ok || j.ok === false) {
           window.alert("Não foi possível guardar o nome: " + (j.error || r.status + " " + r.statusText));
@@ -595,6 +611,10 @@
           cache: "no-store",
           body: JSON.stringify({ confirm: "RESET_LAB_DATA" }),
         });
+        if (r.status === 401) {
+          redirectToPanelLogin();
+          return;
+        }
         const j = await r.json().catch(() => ({}));
         if (!r.ok || j.ok === false) {
           window.alert("Não foi possível apagar: " + (j.error || r.status + " " + r.statusText));

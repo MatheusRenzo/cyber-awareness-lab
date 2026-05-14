@@ -149,6 +149,41 @@ body.ver-body {
   padding-inline: 1rem;
 }
 
+.ver-btn-logout {
+  min-height: 44px;
+  padding-inline: 1rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.ver-login-wrap {
+  max-width: 32rem;
+  margin-inline: auto;
+}
+
+.ver-login-box {
+  margin-top: 1.25rem;
+}
+
+.ver-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ver-login-error {
+  margin: 0 0 0.25rem;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.ver-login-submit {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
 .ver-details--dbg summary {
   color: var(--warn);
 }

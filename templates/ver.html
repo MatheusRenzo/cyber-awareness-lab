@@ -25,6 +25,9 @@
           <span id="beacon-count">0</span> coleta(s) · <span id="device-groups-count">0</span> disp.
         </span>
         <button type="button" class="btn ghost ver-btn-refresh" id="ver-refresh">Atualizar agora</button>
+        {% if panel_auth_enabled %}
+        <a class="btn ghost ver-btn-logout" href="{{ url_for('lab_logout') }}">Sair</a>
+        {% endif %}
       </div>
     </header>
 
@@ -67,8 +70,9 @@
       beaconTail: {{ url_for("beacon_tail")|tojson }},
       deviceLabel: {{ url_for("device_label")|tojson }},
       labReset: {{ url_for("lab_reset")|tojson }},
+      labLogin: {{ url_for("lab_login")|tojson }},
     };
   </script>
-  <script src="{{ url_for('static', filename='ver.js', v='6') }}"></script>
+  <script src="{{ url_for('static', filename='ver.js', v='8') }}"></script>
 </body>
 </html>
