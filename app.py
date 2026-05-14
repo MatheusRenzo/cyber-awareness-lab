@@ -20,15 +20,22 @@ log = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 
-if os.environ.get("TRUST_PROXY", "").strip().lower() in ("1", "true", "yes", "on"):
+_trust_proxy = os.environ.get("TRUST_PROXY", "").strip().lower() in ("1", "true", "yes", "on")
+_trust_xfp = os.environ.get("TRUST_X_FORWARDED_PREFIX", "").strip().lower() in ("1", "true", "yes", "on")
+if _trust_proxy:
+    # x_prefix só com TRUST_X_FORWARDED_PREFIX: um X-Forwarded-Prefix errado (ex. de CDN)
+    # não deve alterar SCRIPT_NAME sem o operador o pedir explicitamente.
     app.wsgi_app = ProxyFix(
         app.wsgi_app,
         x_for=1,
         x_proto=1,
         x_host=1,
-        x_prefix=1,
+        x_prefix=1 if _trust_xfp else 0,
     )
-    log.info("TRUST_PROXY: ProxyFix ativo (X-Forwarded-Prefix / X-Forwarded-For)")
+    log.info(
+        "TRUST_PROXY: ProxyFix ativo (X-Forwarded-Prefix=%s)",
+        "sim (TRUST_X_FORWARDED_PREFIX)" if _trust_xfp else "não (omitir prefixo; trycloudflare costuma não precisar)",
+    )
 
 storage.init_db()
 log.info("Persistência: %s", storage.backend())
@@ -125,7 +132,25 @@ def beacon_page():
 @app.get("/api/ping")
 def api_ping():
     """Diagnóstico rápido: confirma que o tráfego chega a este Flask (útil atrás de túnel/proxy)."""
-    return jsonify({"ok": True, "service": "cyber-awareness-lab"})
+    api_routes = []
+    for r in app.url_map.iter_rules():
+        rule = str(r.rule)
+        if not rule.startswith("/api"):
+            continue
+        methods = sorted(m for m in r.methods if m in ("GET", "HEAD", "POST", "OPTIONS", "PUT", "DELETE"))
+        api_routes.append({"path": rule, "methods": methods})
+    api_routes.sort(key=lambda x: x["path"])
+    has_label_post = any(
+        x["path"] == "/api/device-label" and "POST" in x["methods"] for x in api_routes
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "service": "cyber-awareness-lab",
+            "device_label_post_registered": has_label_post,
+            "api_routes": api_routes,
+        }
+    )
 
 
 @app.get("/api/server-meta")
