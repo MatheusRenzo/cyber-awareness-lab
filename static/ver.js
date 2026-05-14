@@ -4,6 +4,7 @@
   const out = document.getElementById("ver-out");
   const status = document.getElementById("ver-status");
   const btn = document.getElementById("ver-refresh");
+  const resetLabBtn = document.getElementById("ver-reset-lab");
   const beaconCards = document.getElementById("beacon-cards");
   const beaconCount = document.getElementById("beacon-count");
   const deviceGroupsCount = document.getElementById("device-groups-count");
@@ -27,6 +28,7 @@
       beaconTail: "/api/beacon-tail",
       deviceLabel: "/api/device-label",
       auditTail: "/api/audit-tail",
+      labReset: "/api/lab-reset",
     };
     if (api && typeof api[name] === "string" && api[name]) return api[name];
     return fallback[name] || "";
@@ -644,6 +646,40 @@
   }
 
   btn.addEventListener("click", () => load({ forceBeacon: true }));
+
+  if (resetLabBtn) {
+    resetLabBtn.addEventListener("click", async () => {
+      const ok = window.confirm(
+        "Apagar permanentemente todas as coletas (/b), nomes amigáveis dos dispositivos e a linha de tempo de auditoria?\n\nIsto não pode ser desfeito."
+      );
+      if (!ok) return;
+      resetLabBtn.disabled = true;
+      try {
+        const r = await fetch(labApiUrl("labReset"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+          },
+          cache: "no-store",
+          body: JSON.stringify({ confirm: "RESET_LAB_DATA" }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || j.ok === false) {
+          window.alert("Não foi possível apagar: " + (j.error || r.status + " " + r.statusText));
+          return;
+        }
+        deviceLabelsMap = {};
+        await load({ forceBeacon: true });
+      } catch (err) {
+        window.alert("Erro de rede ao apagar: " + String(err));
+      } finally {
+        resetLabBtn.disabled = false;
+      }
+    });
+  }
+
   initBeaconLabelSave();
   initBeaconRefreshResume();
   load();

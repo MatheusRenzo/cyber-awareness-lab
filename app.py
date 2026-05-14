@@ -318,6 +318,35 @@ def device_label():
         return jsonify({"ok": False, "error": str(ex)}), 500
 
 
+_LAB_RESET_CONFIRM = "RESET_LAB_DATA"
+
+
+@app.post("/api/lab-reset")
+def lab_reset():
+    """Apaga todas as coletas, nomes e auditoria (corpo JSON com confirm exato)."""
+    try:
+        body = request.get_json(force=True, silent=False) or {}
+    except Exception:
+        return jsonify({"ok": False, "error": "JSON inválido"}), 400
+    if str(body.get("confirm") or "") != _LAB_RESET_CONFIRM:
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": 'Confirmação inválida. Envie {"confirm":"RESET_LAB_DATA"}.',
+                }
+            ),
+            400,
+        )
+    try:
+        cleared = storage.clear_all_lab_data()
+        log.warning("lab_reset ip=%s cleared=%s", _client_ip(), cleared)
+        return jsonify({"ok": True, "cleared": cleared})
+    except Exception as ex:
+        log.exception("lab-reset: %s", ex)
+        return jsonify({"ok": False, "error": str(ex)}), 500
+
+
 @app.get("/api/audit-tail")
 def audit_tail():
     """Últimos eventos de auditoria (gravados na base de dados)."""

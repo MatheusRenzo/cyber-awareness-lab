@@ -588,6 +588,40 @@ def insert_audit(event: dict[str, Any]) -> None:
                 conn.close()
 
 
+def clear_all_lab_data() -> dict[str, int]:
+    """Apaga todas as coletas /b, nomes de dispositivo e auditoria (irreversível)."""
+    with _lock:
+        if backend() == "sqlite":
+            conn = _sqlite_connect()
+            try:
+                n_b = int(conn.execute("SELECT COUNT(*) AS c FROM beacon_events").fetchone()["c"])
+                n_l = int(conn.execute("SELECT COUNT(*) AS c FROM device_labels").fetchone()["c"])
+                n_a = int(conn.execute("SELECT COUNT(*) AS c FROM audit_events").fetchone()["c"])
+                conn.execute("DELETE FROM beacon_events")
+                conn.execute("DELETE FROM device_labels")
+                conn.execute("DELETE FROM audit_events")
+                conn.commit()
+            finally:
+                conn.close()
+            return {"beacon_events": n_b, "device_labels": n_l, "audit_events": n_a}
+        conn = _pg_connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*)::bigint FROM beacon_events")
+                n_b = int(cur.fetchone()[0])
+                cur.execute("SELECT COUNT(*)::bigint FROM device_labels")
+                n_l = int(cur.fetchone()[0])
+                cur.execute("SELECT COUNT(*)::bigint FROM audit_events")
+                n_a = int(cur.fetchone()[0])
+                cur.execute("DELETE FROM beacon_events")
+                cur.execute("DELETE FROM device_labels")
+                cur.execute("DELETE FROM audit_events")
+            conn.commit()
+        finally:
+            conn.close()
+        return {"beacon_events": n_b, "device_labels": n_l, "audit_events": n_a}
+
+
 def list_audit_tail(limit: int = 100) -> list[dict[str, Any]]:
     """Últimos `limit` eventos, do mais antigo ao mais recente (compatível com o painel /ver)."""
     with _lock:
